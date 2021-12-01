@@ -41,3 +41,4 @@ if __name__ == "__main__":
     read_kaggle_news()
     read_rureviews()
     read_sentirueval()
+    # TODO: add data from sentirueval - twitter
