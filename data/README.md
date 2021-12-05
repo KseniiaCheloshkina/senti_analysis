@@ -20,7 +20,13 @@
   - Description: russian news. Много про Казахстан
   - Target: positive, negative or neutral
 
-Было бы здорово достать корпус Mokoron Russian Twitter Corpus (http://study.mokoron.com/)
+Недоступные датасеты:
+- http://text-machine.cs.uml.edu/projects/rusentiment/
+- Mokoron Russian Twitter Corpus (http://study.mokoron.com/)
+
+Англоязычные датасеты:
+- https://www.yelp.com/dataset
+- https://nlp.stanford.edu/sentiment/index.html
 
 Статьи:
 - https://deepai.org/publication/improving-results-on-russian-sentiment-datasets

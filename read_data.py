@@ -5,10 +5,20 @@ import xml.etree.ElementTree as ET
 
 def read_rureviews():
     print("RUREVIEWS")
-    data = pd.read_csv("data/women-clothing-accessories.3-class.test.csv", sep="\t")
+    data = pd.read_csv("data/women-clothing-accessories.3-class.csv", sep="\t")
     print(len(data))
     print(data["sentiment"].value_counts(normalize=True, dropna=False))
     print(data.sample(5)['review'].values)
+
+
+def read_sentirueval_bank():
+    print("SENTIRUEVAL")
+    tree = ET.parse("data/SentiRuEval_sent_bank_train_2016.xml")
+    root = tree.getroot()
+
+    for elem in root:
+        for subelem in elem:
+            print(subelem.text)
 
 
 def read_sentirueval():
@@ -18,7 +28,7 @@ def read_sentirueval():
 
     for elem in root:
         for subelem in elem:
-            print(subelem.text)
+            print(subelem)
 
 
 def read_kaggle_news():
@@ -41,4 +51,5 @@ if __name__ == "__main__":
     read_kaggle_news()
     read_rureviews()
     read_sentirueval()
+    # read_sentirueval_bank()
     # TODO: add data from sentirueval - twitter

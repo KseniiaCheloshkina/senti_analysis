@@ -15,3 +15,16 @@
 2. Применяем базовые (готовые) решения на собранном корпусе: dostoevskiy, deeppavlov, transformers bert
 3. Выбираем лучшую модель и делаем API
 4. Делаем fine-tuning transformers-модели на своих датасетах и проверяем, повысилось ли качество. Тестируем влияние разных гиперпараметров.
+
+## API
+### 1. Single text
+WEB: http://127.0.0.1:5000/
+### 2. Inline JSON
+```bash
+curl --location --request POST 'localhost:5000/predict_multiple' --header 'Content-Type: application/json' --data-raw '[{"text": "Привет"}, {"text": "Все очень плохо"}]'
+```
+
+### 3. File
+```bash
+curl -X POST -F file=@"data/test_input.json" http://localhost:5000/predict_file
+```
