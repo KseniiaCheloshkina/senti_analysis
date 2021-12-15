@@ -100,7 +100,8 @@ def read_kaggle_news():
 
 
 if __name__ == "__main__":
-    # read_kaggle_news()
-    # read_rureviews()
+    read_kaggle_news()
+    read_rureviews()
     read_sentirueval_twitter()
     # TODO: add data from sentirueval - aspect based
+    # TODO: add data from RuSentiment

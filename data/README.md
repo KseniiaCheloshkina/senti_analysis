@@ -20,22 +20,23 @@
   - Description: russian news. Много про Казахстан
   - Target: positive, negative or neutral
 - SentiRuEval Banks:
-  - Source: 
+  - Source: https://github.com/mokoron/sentirueval
   - Files: 
     - train.xml (9 369, 7% positive / 18% negative)
     - test_etalon.xml (3 302, 9% positive / 23% negative)
   - Description: tweets about russian banks
   - Target: positive, negative or neutral
-- - SentiRuEval Telecom:
-  - Source: 
+- SentiRuEval Telecom:
+  - Source: https://github.com/mokoron/sentirueval
   - Files: 
     - train.xml (8 512, 15% positive / 28% negative)
     - test_etalon.xml (2 198, 8% positive / 45% negative)
   - Description: tweets about russian banks
   - Target: positive, negative or neutral
+- RuSentiment (http://text-machine.cs.uml.edu/projects/rusentiment/)
+  - Source: https://github.com/Ab1992ao/rusentiment/tree/master/Dataset
 
 Недоступные датасеты:
-- http://text-machine.cs.uml.edu/projects/rusentiment/
 - Mokoron Russian Twitter Corpus (http://study.mokoron.com/)
 
 Англоязычные датасеты:
