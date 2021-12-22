@@ -83,6 +83,60 @@ def read_sentirueval():
             print(subelem)
 
 
+def read_rusentiment():
+    print("RUSENTIMENT")
+    print("preselected_posts")
+    data = pd.read_csv("data/rusentiment_preselected_posts.csv")
+    print(len(data))
+    print(data.head())
+    print(data["label"].value_counts(normalize=True, dropna=False))
+    print(data.sample(5)['text'].values)
+
+    print("random_posts")
+    data = pd.read_csv("data/rusentiment_random_posts.csv")
+    print(len(data))
+    print(data.head())
+    print(data["label"].value_counts(normalize=True, dropna=False))
+    print(data.sample(5)['text'].values)
+
+    print("test")
+    data = pd.read_csv("data/rusentiment_test.csv")
+    print(len(data))
+    print(data.head())
+    print(data["label"].value_counts(normalize=True, dropna=False))
+    print(data.sample(5)['text'].values)
+
+
+def read_rutweetcorp():
+    print("RUTWEETCORP")
+    col_names = ["id", "tdate", "tname", "text", "ttype", "trep", "tfav", "tstcount", "tfol", "tfrien", "listcount",
+                 "unknown"]
+    dataset_elements = [
+        ("positive", "data/rutweetcorp_positive.csv"),
+        ("negative", "data/rutweetcorp_negative.csv")
+    ]
+    full_dataset = []
+    for name, path in dataset_elements:
+        data = pd.read_csv(path, sep=";")
+        data.columns = col_names
+        data = data[["text"]]
+        data['target'] = name
+        full_dataset.append(data)
+
+    data = pd.read_table("data/rutweetcorp_neutral.txt", engine="python", header=None, error_bad_lines=False)
+    data.columns = ['text']
+
+    # save to one file
+    data['target'] = "neutral"
+    full_dataset.append(data)
+    df = pd.concat(full_dataset, axis=0)
+    df.to_csv("data/rutweetcorp_full.csv")
+
+    print(len(df))
+    print(df.head())
+    print(df["target"].value_counts(normalize=True, dropna=False))
+
+
 def read_kaggle_news():
     print("NEWS")
     with open("data/train.json", "rb") as f:
@@ -100,8 +154,9 @@ def read_kaggle_news():
 
 
 if __name__ == "__main__":
+    # TODO: add data from sentirueval - aspect based
     read_kaggle_news()
     read_rureviews()
     read_sentirueval_twitter()
-    # TODO: add data from sentirueval - aspect based
-    # TODO: add data from RuSentiment
+    read_rusentiment()
+    read_rutweetcorp()

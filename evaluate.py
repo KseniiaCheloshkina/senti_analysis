@@ -1,4 +1,3 @@
-import json
 import tqdm
 import gc
 from typing import List
@@ -9,75 +8,7 @@ from dostoevsky.tokenization import RegexTokenizer
 from dostoevsky.models import FastTextSocialNetworkModel
 from deeppavlov import build_model
 
-
-from read_data import read_one_sentirueval_twitter
-
-
-class Dataset(object):
-    def __init__(self, dataset_name: str):
-        self.data = None
-        self.train_data = None
-        self.test_data = None
-        self.dataset_name = dataset_name
-        DATASET_PATHS = {
-            'rureviews': {
-                'all': '"data/women-clothing-accessories.3-class.csv"'
-            },
-            "kaggle_news": {
-                "train": '"data/train.json"',
-                "test": '"data/test.json"'
-            },
-            "sentirueval_banks": {
-                "train": '"data/SentiRuEval_sent_bank_train_2016.xml"',
-                "test": '"data/SentiRuEval_sent_banks_test_etalon.xml"'
-            },
-            "sentirueval_tkk": {
-                "train": '"data/SentiRuEval_sent_tkk_train_2016.xml"',
-                "test": '"data/SentiRuEval_sent_tkk_test_etalon.xml"'
-            }
-        }
-        data_path = DATASET_PATHS[self.dataset_name]
-        if 'train' in data_path:
-            self.train_data = self.load_data(dataset_name=self.dataset_name, path=data_path['train'])
-        if 'all' in data_path:
-            self.data = self.load_data(dataset_name=self.dataset_name, path=data_path['all'])
-        if 'test' in data_path:
-            self.test_data = self.load_data(dataset_name=self.dataset_name, path=data_path['test'])
-
-    def load_data(self, dataset_name: str, path: str):
-        # TODO: add rusentiment
-        func_name = "self.load_{}(path={})".format(dataset_name, path)
-        data = eval(func_name)
-        return data
-
-    @staticmethod
-    def load_sentirueval_banks(path):
-        banks_names = ['rshb', 'uralsib', 'raiffeisen', 'bankmoskvy', 'alfabank', 'gazprom', 'vtb', 'sberbank']
-        data = read_one_sentirueval_twitter(path, banks_names)
-        data.rename(columns={'sentiment': 'target'}, inplace=True)
-        return data
-
-    @staticmethod
-    def load_sentirueval_tkk(path):
-        telecom_names = ['beeline', 'mts', 'megafon', 'tele2', 'rostelecom', 'komstar', 'skylink']
-        data = read_one_sentirueval_twitter(path, telecom_names)
-        data.rename(columns={'sentiment': 'target'}, inplace=True)
-        return data
-
-    @staticmethod
-    def load_rureviews(path):
-        data = pd.read_csv(path, sep="\t")
-        data.rename(columns={'review': 'text', 'sentiment': 'target'}, inplace=True)
-        return data
-
-    @staticmethod
-    def load_kaggle_news(path):
-        with open(path, "rb") as f:
-            data = json.load(f)
-        data = pd.DataFrame(data)
-        data.rename(columns={'sentiment': 'target'}, inplace=True)
-        data.drop(['id'], axis=1, inplace=True)
-        return data
+from dataset import Dataset
 
 
 class Model(object):
@@ -184,8 +115,10 @@ def evaluate_all_models():
     datasets = [
         # "rureviews",
         # "kaggle_news",
-        "sentirueval_banks",
-        "sentirueval_tkk"
+        # "sentirueval_banks",
+        # "sentirueval_tkk",
+        "rusentiment",
+        # "rutweetcorp"
     ]
     batch_sizes = {
         "dostoevsky": 1000,
@@ -199,7 +132,8 @@ def evaluate_all_models():
         all_data.append(df_metrics_all)
     all_data = pd.concat(all_data)
     print(all_data)
-    all_data.to_excel("data/evaluate_results.xlsx")
+    all_data.to_excel("data/evaluate_results_rutweet_rusent.xlsx")
+    # all_data.to_excel("data/evaluate_results.xlsx")
 
 
 def evaluate_model(model_name: str, datasets: List[str], batch_size: int = 100):
@@ -211,11 +145,14 @@ def evaluate_model(model_name: str, datasets: List[str], batch_size: int = 100):
             current_df = dataset.__getattribute__(data_type)
             if current_df is not None:
                 df_metrics = model.evaluate(current_df.sample(1000))
-                df_metrics['dataset'] = dataset_name
+                df_metrics['dataset'] = "{}_{}".format(dataset_name, data_type)
                 all_metrics.append(df_metrics)
     df_metrics_all = pd.concat(all_metrics)
+    del model
+    gc.collect()
     return df_metrics_all
 
 
 if __name__ == "__main__":
+    # TODO: remove nrows=1000
     evaluate_all_models()
