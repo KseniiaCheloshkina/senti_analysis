@@ -7,6 +7,8 @@ from sklearn.metrics import f1_score
 from dostoevsky.tokenization import RegexTokenizer
 from dostoevsky.models import FastTextSocialNetworkModel
 from deeppavlov import build_model
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
 
 from dataset import Dataset
 
@@ -38,27 +40,47 @@ class Model(object):
     def __init__(self, model_name: str, batch_size: int = 100):
         self.model_name = model_name
         self.batch_size = batch_size
+        self.tokenizer = None
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
         if model_name == "dostoevsky":
             tokenizer = RegexTokenizer()
             self.model = FastTextSocialNetworkModel(tokenizer=tokenizer)
         if model_name in self.DP_CONFIG_LIST:
             self.model = build_model(model_name, download=False)
+        if model_name == "xlm_roberta_large":
+            checkpoint = "sismetanin/xlm_roberta_large-ru-sentiment-rutweetcorp"
+            self.tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+            model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
+            self.model = model.to(self.device)
 
     def predict_dostoevsky(self, text: List[str]):
         prediction = pd.DataFrame(self.model.predict(text))
         label_pred = np.argmax(prediction.values, axis=1)
         major_pred_class = list(map(lambda x: prediction.columns[x], label_pred))
+        print(major_pred_class)
         return major_pred_class
 
     def predict_dp(self, text: List[str]):
         prediction = self.model(text)
         return prediction
 
+    def predict_xlm_roberta_large(self, text: List[str]):
+        tokens = self.tokenizer(text, padding=True, truncation=True, return_tensors="pt").to(self.device)
+        output = self.model(**tokens)
+        prediction = output.logits.softmax(dim=-1).tolist()
+        prediction = np.array(prediction)
+        label_pred = np.argmax(prediction, axis=1)
+        target_names = ['positive', 'neutral', 'negative']
+        major_pred_class = list(map(lambda x: target_names[x], label_pred))
+        return major_pred_class
+
     def predict_on_batch(self, texts: List[str]):
         if self.model_name == "dostoevsky":
             prediction = self.predict_dostoevsky(texts)
         if self.model_name in self.DP_CONFIG_LIST:
             prediction = self.predict_dp(texts)
+        if self.model_name == "xlm_roberta_large":
+            prediction = self.predict_xlm_roberta_large(texts)
         return prediction
 
     def predict(self, dataset: pd.DataFrame):
@@ -108,22 +130,24 @@ class Model(object):
 
 def evaluate_all_models():
     model_names = [
-        "dostoevsky",
-        "sentiment_twitter_preproc",
-        "rusentiment_convers_bert"
+        # "dostoevsky",
+        # "sentiment_twitter_preproc",
+        # "rusentiment_convers_bert",
+        "xlm_roberta_large"
     ]
     datasets = [
         # "rureviews",
         # "kaggle_news",
         # "sentirueval_banks",
         # "sentirueval_tkk",
-        "rusentiment",
-        # "rutweetcorp"
+        # "rusentiment",
+        "rutweetcorp"
     ]
     batch_sizes = {
         "dostoevsky": 1000,
         "sentiment_twitter_preproc": 200,
-        "rusentiment_convers_bert": 100
+        "rusentiment_convers_bert": 100,
+        "xlm_roberta_large": 5
     }
     all_data = []
     for model_name in model_names:
@@ -132,8 +156,7 @@ def evaluate_all_models():
         all_data.append(df_metrics_all)
     all_data = pd.concat(all_data)
     print(all_data)
-    all_data.to_excel("data/evaluate_results_rutweet_rusent.xlsx")
-    # all_data.to_excel("data/evaluate_results.xlsx")
+    all_data.to_excel("data/evaluate_results.xlsx")
 
 
 def evaluate_model(model_name: str, datasets: List[str], batch_size: int = 100):
