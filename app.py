@@ -16,8 +16,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 0.5 * 1024 * 1024
 
 CONFIG = {
-    "model_name": "sentiment_twitter_preproc",
-    "batch_size": 200
+    "model_name": "dostoevsky",
+    "batch_size": 1000
 }
 
 global model
