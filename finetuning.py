@@ -3,6 +3,9 @@
 # Попробуем дообучить эту модель на датасетах, на которых эта модель показывает качество хуже
 # 1. Обучаем на трейн этого датасета, оцениваем качество на тесте этого датасета
 # 2. Обучаем на трейне нескольких датасетов, оцениваем качество на тесте этого датасета
+# multilingual BERT fine-tuned on english dialog datasets and MLM on Russian
+# Use t5 as in mrm8488/t5-base-finetuned-span-sentiment-extraction
+
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 
