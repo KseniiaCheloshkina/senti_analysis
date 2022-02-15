@@ -35,6 +35,5 @@ curl -X POST -F file=@"data/test_input.json" http://localhost:5000/predict_file
 pip install -r requirements_predict.txt
 python -m dostoevsky download fasttext-social-network-model
 python app.py
-#export FLASK_APP=api-server
 #python -m flask run --host=0.0.0.0
 ```
