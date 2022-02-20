@@ -22,14 +22,14 @@
 - SentiRuEval Banks:
   - Source: https://github.com/mokoron/sentirueval
   - Description: tweets about russian banks
-  - Target: positive, negative or neutral
+  - Target: positive(1), negative(-1) or neutral(0)
   - Files: 
     - train.xml (9 369, 7% positive / 18% negative)
     - test_etalon.xml (3 302, 9% positive / 23% negative)
 - SentiRuEval Telecom:
   - Source: https://github.com/mokoron/sentirueval
   - Description: tweets about russian banks
-  - Target: positive, negative or neutral
+  - Target: positive(1), negative(-1) or neutral(0)
   - Files: 
     - train.xml (8 512, 15% positive / 28% negative)
     - test_etalon.xml (2 198, 8% positive / 45% negative)

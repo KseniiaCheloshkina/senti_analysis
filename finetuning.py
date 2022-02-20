@@ -1,12 +1,23 @@
-# В целом хорошо показывает разговорный БЕРТ (rusentiment_convers_bert)
+# В целом хорошо показывает разговорный БЕРТ (rusentiment_convers_bert, 20 tokens)
 # он обучен на корпусе rusentiment (на нем и показывает лучшее качество из всех)
-# Попробуем дообучить эту модель на датасетах, на которых эта модель показывает качество хуже
+# Дообучить эту модель на датасетах, на которых эта модель показывает качество хуже (sentirueval_banks, sentirueval_tkk)
 # 1. Обучаем на трейн этого датасета, оцениваем качество на тесте этого датасета
 # 2. Обучаем на трейне нескольких датасетов, оцениваем качество на тесте этого датасета
+
 # multilingual BERT fine-tuned on english dialog datasets and MLM on Russian
+# English datasets (each utterance is labeled):
+# labeled by emotions: EmoryNLP, MELD, EmotionLines, EmoContext, DailyDialog
+# labeled additionally with sentiment: MELD
+
 # Use t5 as in mrm8488/t5-base-finetuned-span-sentiment-extraction
 
+import numpy as np
+import pandas as pd
+import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+from dataset import Dataset
+from evaluate import get_metrics
 
 
 CASES = [
@@ -19,67 +30,77 @@ CASES = [
 ]
 
 
-def initialize_model():
-    model_checkpoint = "sismetanin/rubert_conversational-ru-sentiment-rusentiment"
-    # model_checkpoint = "sismetanin/rubert-ru-sentiment-rusentiment"
-    tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
-    model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint)
-    return tokenizer, model
+class CustomBERTModel(object):
+
+    def predict(self, texts):
+        pass
+
+    def evaluate(self,
+                 dataset_name="sentirueval_banks",
+                 target_mapping={"0": "neutral", "1": "positive", "-1": "negative"}
+                 ):
+        all_metrics = []
+        dataset = Dataset(dataset_name=dataset_name)
+        for data_type in ["data", "train_data", "test_data"]:
+            current_df = dataset.__getattribute__(data_type)
+            if current_df is not None:
+                data = current_df['text'].values.tolist()
+                target = current_df['target'].values.tolist()
+                target = list(map(lambda x: target_mapping[x], target))
+                # TODO: add batch processing
+                data = data[:200]
+                target = target[:200]
+                predictions = self.predict(data)
+                df_metrics = get_metrics(target=target, prediction=predictions)
+                df_metrics['dataset'] = "{}_{}".format(dataset_name, data_type)
+                all_metrics.append(df_metrics)
+        df_metrics_all = pd.DataFrame(all_metrics)
+        return df_metrics_all
 
 
-def check_model(cases):
-    tokenizer, model = initialize_model()
-    print(model.config.max_length)
-    print(model.config.id2label)
+class BaseConversationalModel(CustomBERTModel):
+    """
+    Base conversational RuBERT model trained on RuSentiment dataset
+    # 20 tokens sequence length
+    # class labels: negative, neutral, positive, skip, speech
+    """
+    def __init__(self):
+        self.model_checkpoint = "sismetanin/rubert_conversational-ru-sentiment-rusentiment"
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_checkpoint)
+        model = AutoModelForSequenceClassification.from_pretrained(self.model_checkpoint)
+        self.model = model.to(self.device)
+        # TODO: add method predict_on_batch
 
-
-def check_tokenizer(cases):
-    tokenizer, model = initialize_model()
-
-    # SINGLE CASE
-    example = cases[-1]
-    # only split string on tokens - return string
-    tokens = tokenizer.tokenize(example)
-    print(tokens)
-    # turn tokens to input_ids - no special tokens added
-    ids = tokenizer.convert_tokens_to_ids(tokens)
-    print(ids)
-    # convert inut_ids to initial string
-    decoded_string = tokenizer.decode(ids)
-    print(decoded_string)
-    # GENERAL FUNCTION - incorporate several utilities and consequent operations
-    # return dict of keys ('input_ids', 'token_type_ids', 'attention_mask')
-    # input_ids with added CLS and SEP
-    print(tokenizer(example))
-    # additionally could be padded, truncated
-    print(tokenizer(example, padding=True, truncation=True, max_length=2))
-    print(model.config.max_length)
-    print(tokenizer(example, padding="max_length", truncation=True, max_length=model.config.max_length))
-    # to be processed by model inputs should be collected in batches of the same length as torch tensors
-    print(tokenizer(example, padding="max_length", truncation=True, max_length=model.config.max_length,
-                    # return_tensors='pt'
-                    ))
-    # VOCABULARY
-    # which special tokens and their ids?
-    print(tokenizer.all_special_ids)
-    print(tokenizer.all_special_tokens)
-    # dict token: input_id
-    vocab = tokenizer.get_vocab()
-    # other tokens could be added to vocabulary
-    unknown_token = "эквайринг"
-    print(tokenizer(unknown_token)['input_ids'])
-    print(tokenizer.add_tokens([unknown_token]))
-    print(tokenizer(unknown_token)['input_ids'])
-    # other special tokens could be added to vocabulary
-    text = "я встретила в тексте [NEW_TOKEN]"
-    print(tokenizer(text)['input_ids'])
-    print(len(tokenizer))
-    tokenizer.add_tokens(['[NEW_TOKEN]'], special_tokens=True)
-    model.resize_token_embeddings(len(tokenizer))  # embedding matrix should be resized
-    print(len(tokenizer))
-    print(tokenizer(text)['input_ids'])
+    def predict(self, texts):
+        tokens = self.tokenizer(texts, padding="max_length", max_length=self.model.config.max_length,
+                           truncation=True, return_tensors="pt").to(self.device)
+        output = self.model(**tokens)
+        probas = output.logits.softmax(dim=-1).tolist()
+        prediction = np.array(probas)
+        label_pred = np.argmax(prediction, axis=1)
+        target_names = ['negative', 'neutral', 'positive', 'skip', 'speech']
+        major_pred_class = list(map(lambda x: target_names[x], label_pred))
+        TARGET_MAPPING = {
+            'negative': 'negative',
+            'positive': 'positive',
+            'neutral': 'neutral',
+            'skip': 'neutral',
+            'speech': 'neutral'
+        }
+        return list(map(lambda x: TARGET_MAPPING[x], major_pred_class))
 
 
 if __name__ == "__main__":
-    check_model(CASES)
-    check_tokenizer(CASES)
+    base_model = BaseConversationalModel()
+    predicted_labels = base_model.predict(CASES)
+    print(predicted_labels)
+    df_results = base_model.evaluate()
+    print(df_results)
+    df_results.to_csv("data/test_base_bert.csv")
+    # PLAN:
+    # 1. add batch prediction to evaluate sentirueval_banks on BaseConversationalModel
+    # 2. create new class with fine-tuned model
+    # 3. add method fine_tune(model_checkpoint)
+    # 4. fine-tune on train, evaluate on train and test
+    # 5. print reesulting table - before and after fine-tuning
