@@ -28,6 +28,7 @@ cryptography==36.0.0
 cycler==0.10.0
 Cython==0.29.14
 dataclasses==0.8
+datasets==1.18.3
 DAWG-Python==0.7.2
 decorator==4.4.2
 deeppavlov==0.17.1

@@ -108,5 +108,17 @@ def save_all_data_to_file():
     df.to_csv("data/all_datasets.csv")
 
 
+def save_to_csv():
+    data = Dataset("sentirueval_banks")
+    print(data)
+    data_files = {
+        "train": "data/sentirueval_banks_train.csv",
+        "test": "data/sentirueval_banks_test.csv"
+    }
+    data.train_data.to_csv(data_files["train"])
+    data.test_data.to_csv(data_files["test"])
+
+
 if __name__ == "__main__":
     save_all_data_to_file()
+    save_to_csv()

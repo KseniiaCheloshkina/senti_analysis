@@ -14,7 +14,8 @@
 import numpy as np
 import pandas as pd
 import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, DataCollatorWithPadding
+from datasets import load_dataset
 
 from dataset import Dataset
 from evaluate import get_metrics
@@ -28,6 +29,17 @@ CASES = [
     'неудобная куртка',
     'всё очень плохо'
 ]
+
+
+def create_dataset():
+    data_files = {
+        "train": "data/sentirueval_banks_train.csv",
+        "test": "data/sentirueval_banks_test.csv"
+    }
+    tr_dataset = load_dataset("csv", data_files=data_files)
+    print(tr_dataset)
+    print(tr_dataset["train"][0])
+    print(tr_dataset["test"][0])
 
 
 class CustomBERTModel(object):
@@ -90,17 +102,33 @@ class BaseConversationalModel(CustomBERTModel):
         }
         return list(map(lambda x: TARGET_MAPPING[x], major_pred_class))
 
+    def tokenize_function(self, example):
+        return self.tokenizer(example, truncation=True)
+
+    def predict_on_batch(self, texts):
+        # TODO: create Dataset
+        tokenized_datasets = texts.map(self.tokenize_function, batched=True)
+        print(tokenized_datasets)
+        samples = tokenized_datasets["train"][:8]
+        samples = {k: v for k, v in samples.items() if k not in ["idx", "sentence1", "sentence2"]}
+        print([len(x) for x in samples["input_ids"]])
+        # dynamic padding and conversion to tensor
+        data_collator = DataCollatorWithPadding(tokenizer=self.tokenizer)
+        batch = data_collator(samples)
+        print({k: v.shape for k, v in batch.items()})
+
 
 if __name__ == "__main__":
-    base_model = BaseConversationalModel()
-    predicted_labels = base_model.predict(CASES)
-    print(predicted_labels)
-    df_results = base_model.evaluate()
-    print(df_results)
-    df_results.to_csv("data/test_base_bert.csv")
+    # base_model = BaseConversationalModel()
+    # predicted_labels = base_model.predict(CASES)
+    # print(predicted_labels)
+    # df_results = base_model.evaluate()
+    # print(df_results)
+    # df_results.to_csv("data/test_base_bert.csv")
     # PLAN:
     # 1. add batch prediction to evaluate sentirueval_banks on BaseConversationalModel
     # 2. create new class with fine-tuned model
     # 3. add method fine_tune(model_checkpoint)
     # 4. fine-tune on train, evaluate on train and test
     # 5. print reesulting table - before and after fine-tuning
+    create_dataset()
