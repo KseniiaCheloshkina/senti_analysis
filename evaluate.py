@@ -23,6 +23,8 @@ class Model(object):
         "sentiment_twitter",
         "sentiment_twitter_preproc"
     ]
+    # TODO: check if 0,1,-1 is used in other datasets
+    # in sentirueval mapping is {"0": "neutral", "1": "positive", "-1": "negative"}
     TARGET_MAPPING = {
         'negative': 'negative',
         'Negative': 'negative',
@@ -109,23 +111,27 @@ class Model(object):
         # apply mapping of target names from different models to single notation
         final_target = list(map(lambda x: self.TARGET_MAPPING[x], target))
         final_prediction = self.predict(dataset)
-        df_metrics = {
-            'f_micro_2': f1_score(y_true=final_target, y_pred=final_prediction,
-                                labels=['positive', 'negative'],
-                                average='micro'),
-            'f_macro_2': f1_score(y_true=final_target, y_pred=final_prediction,
-                                labels=['positive', 'negative'],
-                                average='macro'),
-            'f_micro_3': f1_score(y_true=final_target, y_pred=final_prediction,
-                                  average='micro'),
-            'f_macro_3': f1_score(y_true=final_target, y_pred=final_prediction,
-                                  average='macro'),
-            'f_pos': f1_score(y_true=final_target, y_pred=final_prediction, labels=['positive'], average='micro'),
-            'f_neg': f1_score(y_true=final_target, y_pred=final_prediction, labels=['negative'], average='micro'),
-            'f_neutral': f1_score(y_true=final_target, y_pred=final_prediction, labels=['neutral'], average='micro')
-        }
+        df_metrics = get_metrics(final_target, final_prediction)
         df_metrics.update(dataset['target'].map(self.TARGET_MAPPING).value_counts().to_dict())
         return pd.DataFrame([df_metrics])
+
+
+def get_metrics(target, prediction):
+    return {
+        'f_micro_2': f1_score(y_true=target, y_pred=prediction,
+                              labels=['positive', 'negative'],
+                              average='micro'),
+        'f_macro_2': f1_score(y_true=target, y_pred=prediction,
+                              labels=['positive', 'negative'],
+                              average='macro'),
+        'f_micro_3': f1_score(y_true=target, y_pred=prediction,
+                              average='micro'),
+        'f_macro_3': f1_score(y_true=target, y_pred=prediction,
+                              average='macro'),
+        'f_pos': f1_score(y_true=target, y_pred=prediction, labels=['positive'], average='micro'),
+        'f_neg': f1_score(y_true=target, y_pred=prediction, labels=['negative'], average='micro'),
+        'f_neutral': f1_score(y_true=target, y_pred=prediction, labels=['neutral'], average='micro')
+    }
 
 
 def evaluate_all_models():
